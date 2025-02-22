@@ -30,9 +30,8 @@ The Bridge Design Pattern is a structural pattern that decouples an abstraction 
 
 ---
 
-## Real-Life Example in Software Systems: Remote Control for TVs
+## Real-Life Example in Software Systems: Gui Exampl
 
-Consider a scenario where you have a remote control system that works with various types of TVs (e.g., Sony, LG, Samsung). Instead of hardcoding the remote to a specific TV, you can separate the remote control (abstraction) from the TV (implementation).
 
 ### Without Using the Bridge Pattern (Tight Coupling)
 ```go
@@ -40,98 +39,104 @@ package main
 
 import "fmt"
 
-// SonyTV with specific methods
-type SonyTV struct{}
-
-func (tv *SonyTV) On() {
-    fmt.Println("Sony TV is on")
+// A Windows-specific window class
+type WindowsWindow struct {
+	title          string
+	x, y, width, height int
 }
 
-func (tv *SonyTV) Off() {
-    fmt.Println("Sony TV is off")
+func (w *WindowsWindow) Draw() {
+	fmt.Printf("Windows: Drawing window '%s' at (%d,%d) with size %dx%d\n",
+		w.title, w.x, w.y, w.width, w.height)
+}
+
+// A Linux (X Window System) specific window class
+type XWindow struct {
+	title          string
+	x, y, width, height int
+}
+
+func (xw *XWindow) Draw() {
+	fmt.Printf("XWindow: Drawing window '%s' at (%d,%d) with size %dx%d\n",
+		xw.title, xw.x, xw.y, xw.width, xw.height)
 }
 
 func main() {
-    // Client is directly coupled to SonyTV
-    tv := &SonyTV{}
-    tv.On()
-    tv.Off()
+	// Create a Windows window
+	win := WindowsWindow{"My App", 10, 10, 300, 200}
+	win.Draw()
+
+	// Create an X Window
+	xwin := XWindow{"My App", 20, 20, 300, 200}
+	xwin.Draw()
 }
+
 ```
 *Issues:*
-- The client is tightly coupled with a specific TV implementation.
-- Changing to a different TV (e.g., LGTV) would require modifying the client code.
+- You have two separate classes (WindowsWindow and XWindow) that essentially do the same thing but are hardcoded for different platforms.
+- If you later want to add a new type of window (say, a dialog) for each platform, you might end up duplicating a lot of similar code.
+- The high-level "what a window does" (its behavior) and the low-level "how it’s drawn" are not separated. They’re intertwined in each    platform-specific class.
 
 ### With Bridge Design Pattern
 ```go
-package main
-
-import "fmt"
-
-// Implementor: TV interface defines operations common to all TVs.
-type TV interface {
-    On()
-    Off()
+// WindowImp is the implementor interface for drawing operations.
+type WindowImp interface {
+	DrawRect(x, y, width, height int)
+	DrawText(text string, x, y int)
 }
 
-// Concrete Implementor: SonyTV implements TV interface.
-type SonyTV struct{}
+// Windows-specific drawing implementation.
+type WindowsImp struct{}
 
-func (tv *SonyTV) On() {
-    fmt.Println("Sony TV is on")
+func (w *WindowsImp) DrawRect(x, y, width, height int) {
+	fmt.Printf("WindowsAPI: Drawing rectangle at (%d,%d) with size %dx%d\n", x, y, width, height)
 }
 
-func (tv *SonyTV) Off() {
-    fmt.Println("Sony TV is off")
+func (w *WindowsImp) DrawText(text string, x, y int) {
+	fmt.Printf("WindowsAPI: Drawing text '%s' at (%d,%d)\n", text, x, y)
 }
 
-// Concrete Implementor: LGTV implements TV interface.
-type LGTV struct{}
+// X Window-specific drawing implementation.
+type XImp struct{}
 
-func (tv *LGTV) On() {
-    fmt.Println("LG TV is on")
+func (x *XImp) DrawRect(xpos, ypos, width, height int) {
+	fmt.Printf("XWindow: Drawing rectangle at (%d,%d) with size %dx%d\n", xpos, ypos, width, height)
 }
 
-func (tv *LGTV) Off() {
-    fmt.Println("LG TV is off")
+func (x *XImp) DrawText(text string, xpos, ypos int) {
+	fmt.Printf("XWindow: Drawing text '%s' at (%d,%d)\n", text, xpos, ypos)
+}
+// Window is the high-level abstraction that represents a window.
+type Window struct {
+	title           string
+	x, y, width, height int
+	imp             WindowImp  // Bridge to the drawing implementation.
 }
 
-// Abstraction: RemoteControl holds a reference to a TV.
-type RemoteControl struct {
-    tv TV
-}
-
-func (r *RemoteControl) TurnOn() {
-    r.tv.On()
-}
-
-func (r *RemoteControl) TurnOff() {
-    r.tv.Off()
-}
-
-// Refined Abstraction: AdvancedRemote may extend functionality.
-type AdvancedRemote struct {
-    RemoteControl // Embedding the basic remote functionality.
-}
-
-func (ar *AdvancedRemote) SetChannel(channel int) {
-    fmt.Printf("Setting channel to %d\n", channel)
+// Draw delegates the drawing to the underlying implementor.
+func (w *Window) Draw() {
+	w.imp.DrawRect(w.x, w.y, w.width, w.height)
+	w.imp.DrawText(w.title, w.x+10, w.y+20)
 }
 
 func main() {
-    // Client can work with any TV through the remote control abstraction.
-    sony := &SonyTV{}
-    remote1 := &RemoteControl{tv: sony}
-    remote1.TurnOn()
-    remote1.TurnOff()
+	// Create a window that uses the Windows API for drawing.
+	win := &Window{
+		title:  "My Windows App",
+		x:      10, y: 10, width: 300, height: 200,
+		imp:    &WindowsImp{},
+	}
+	win.Draw()
 
-    // Switching implementation without changing client code.
-    lg := &LGTV{}
-    remote2 := &AdvancedRemote{RemoteControl{tv: lg}}
-    remote2.TurnOn()
-    remote2.SetChannel(5)
-    remote2.TurnOff()
+	// Create another window that uses the X Window system for drawing.
+	xwin := &Window{
+		title:  "My X App",
+		x:      20, y: 20, width: 300, height: 200,
+		imp:    &XImp{},
+	}
+	xwin.Draw()
 }
+
 ```
 
 ---
