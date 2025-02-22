@@ -134,3 +134,44 @@ func main() {
 
 ## Conclusion:
 The Adapter Design Pattern is an effective solution for integrating classes with incompatible interfaces. By wrapping an existing class with an adapter, you can reuse legacy components, integrate third-party libraries, and maintain a consistent interface for client code. This pattern promotes decoupling and flexibility in system design, making it easier to evolve your codebase without significant refactoring.
+
+
+## Interchangeability Example
+
+The real power of the Adapter Pattern becomes evident when you need to treat different implementations uniformly. 
+Consider a function that expects an `AudioPlayer`:
+
+### Without the Adapter Pattern
+
+In this case, you have a function that requires the `AudioPlayer` interface:
+
+```go
+// Function that expects an AudioPlayer
+func PlayMusic(player AudioPlayer, fileName string) {
+    player.Play(fileName)
+}
+
+func main() {
+    modernPlayer := &ModernAudioPlayer{}
+    PlayMusic(modernPlayer, "song_modern.mp3") // ✅ Works fine
+
+    legacyPlayer := &LegacyAudioPlayer{}
+    // PlayMusic(legacyPlayer, "song_legacy.mp3") // ❌ ERROR! LegacyAudioPlayer does not implement AudioPlayer
+}
+```
+
+### Wit the Adapter Pattern
+```go
+// Function that expects an AudioPlayer (same as before)
+func PlayMusic(player AudioPlayer, fileName string) {
+    player.Play(fileName)
+}
+
+func main() {
+    modernPlayer := &ModernAudioPlayer{}
+    PlayMusic(modernPlayer, "song_modern.mp3") // ✅ Works fine
+
+    adaptedLegacyPlayer := &AudioAdapter{legacyPlayer: &LegacyAudioPlayer{}}
+    PlayMusic(adaptedLegacyPlayer, "song_legacy.mp3") // ✅ Now works with adapter!
+}
+```
